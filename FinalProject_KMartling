@@ -1,0 +1,135 @@
+#Kaylie Martling Course Project
+#Comparing the annual AQI with the annual temperature across states in the southeastern U.S.
+
+#Part 1
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+
+file = open("kaylie data.csv", "r") #open the file
+first = True
+
+lol = [] #creating empty list of lists
+
+for line in file:
+    if first == True:
+        data = line.split(",") #Splitting the data by comma (CSV file)
+        first = False
+    else: 
+        data = line.split(",")
+        edited_data = [float(value) for value in data[2:]] #converting the numerical data to floats
+        lol.append(edited_data) #appending numerical data to list of lists
+
+AQI = [] #creating two separate lists fo AQI and temperature
+temp = []
+
+for a in lol:
+    for b in a:
+        AQI.append(a[10])
+        temp.append(a[16])
+        break
+
+#Calculating statistical values for the data
+print("Part 1: Data Description")
+print("\nAQI Data", "\nMean:", np.mean(AQI), "\nMedian:", np.median(AQI), "\nStandard Deviation:", np.std(AQI))
+print("\nTemperature Data", "\nMean:", np.mean(temp), "\nMedian:", np.median(temp), "\nStandard Deviation:", np.std(temp))
+print("\nRelevant Histograms")
+
+        
+fig, ax = plt.subplots() #Setting up the histrogram for AQI
+plt.hist(AQI, bins="auto")
+ax.set_xlabel("Number of Counties in the Southeastern U.S.")
+ax.set_ylabel("Median Annual AQI")
+plt.title("Median AQI in the Southeastern U.S.")
+fig, ax = plt.subplots() #Setting up the histogram for temperature
+plt.hist(temp, bins="auto")
+ax.set_xlabel("Number of Counties in the Southeastern U.S.")
+ax.set_ylabel("Mean Annual Temperature (F)")
+plt.title("Mean Temperature in the Southeastern U.S.")
+
+#Part 2 - Correlation
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+from scipy.stats import linregress
+
+print("Part 2: Correlation")
+x, y = [temp , AQI]
+res = stats.pearsonr(x, y) #calculating the Pearson correlation value
+res1 = stats.spearmanr(x, y) #calculating the Spearman correlation value
+print("\nPearson Correlation:",res[0])
+print("Spearman Correlation:", res1[0])
+
+slope, intercept, r_value, p_value, std_err = linregress(x, y) #creating the linear regression values
+
+def myfunc(x): #creating a function to plot the linear regression line
+  return slope * x + intercept
+mymodel = list(map(myfunc, x))
+
+#creating a scatterplot with the linear regression line overlaid
+plt.plot(x, mymodel)
+plt.scatter(x,y)
+plt.ylabel("Median AQI")
+plt.xlabel("Mean Temperature (F)")
+plt.title("Mean Temperature vs Median AQI in the Southeastern U.S.")
+
+
+#Part 3 - Dimentionality Reduction
+print("Part 3: Dimensionality Reduction")
+
+from sklearn.decomposition import PCA
+import pandas as pd
+
+pca = PCA(n_components=20) #Initialize PCA object, there are 19 components in each sample
+principal_components = pca.fit_transform(lol) # Fit the PCA model to the data
+fig, ax = plt.subplots() #generating the plot
+
+PCX=1 #using PC1 and PC2 as the directions stated
+PCY=2
+
+ax.scatter(principal_components[:15 , PCX], principal_components[:15 , PCY], c="red")  # Plotting Alabama samples in red
+ax.scatter(principal_components[16:26 , PCX], principal_components[16:26 , PCY], c="orange")  # Plotting Arkansas samples in orange
+ax.scatter(principal_components[27 , PCX], principal_components[27 , PCY], c="yellow")  # Plotting DC samples in yellow
+ax.scatter(principal_components[28:65 , PCX], principal_components[28:65 , PCY], c="green")  # Plotting Florida samples in green
+ax.scatter(principal_components[66:94 , PCX], principal_components[66:94 , PCY], c="blue")  # Plotting Georgia samples in blue
+ax.scatter(principal_components[95:119 , PCX], principal_components[95:119 , PCY], c="indigo")  # Plotting Kentucky samples in indigo
+ax.scatter(principal_components[120:141 , PCX], principal_components[120:141 , PCY], c="violet")  # Plotting Louisiana samples in violet
+ax.scatter(principal_components[142:151 , PCX], principal_components[142:151 , PCY], c="pink")  # Plotting Mississippi samples in pink
+ax.scatter(principal_components[152:186 , PCX], principal_components[152:186 , PCY], c="black")  # Plotting NC samples in black
+ax.scatter(principal_components[187:200 , PCX], principal_components[187:200 , PCY], c="gray")  # Plotting SC samples in gray
+ax.scatter(principal_components[201:223 , PCX], principal_components[201:223 , PCY], c="brown")  # Plotting Tennessee samples in green
+ax.scatter(principal_components[224:245 , PCX], principal_components[224:245 , PCY], c="lime")  # Plotting Virginia samples in green
+ax.scatter(principal_components[246: , PCX], principal_components[246: , PCY], c="magenta")  # Plotting WV samples in green
+
+#Set axis labels
+plt.title("PCA Mean Temp. & Median AQI in Southeastern U.S.")
+label_X = "PCX (" + str(np.round(pca.explained_variance_ratio_[PCX]*100, decimals=2)) + "%)"
+label_Y = "PCY (" + str(np.round(pca.explained_variance_ratio_[PCY]*100, decimals=2)) + "%)"
+ax.set_xlabel(label_X)
+ax.set_ylabel(label_Y)
+
+#getting each individual component weight
+weights = pca.components_
+
+PCX = 1 #starting counter
+dictionary = {} #empty dictionary
+
+for x in weights:
+    if PCX<20:
+        dictionary.update({PCX : (np.round(pca.explained_variance_ratio_[PCX]*100, decimals=2))}) #creating a dictionary with each weight
+        PCX += 1 #counter
+dictionary.update({20: 0.0}) #making the last value 0
+
+PC_Values = list(dictionary.keys())
+Weights = list(dictionary.values()) #each weight
+ 
+fig = plt.figure() #creating a bar graph of the PCA weights
+abc = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+plt.bar(PC_Values, Weights, color ='maroon')
+plt.xlabel("PC Values")
+plt.ylabel("Weights (%)")
+plt.title("Principal Component Weights")
+plt.xticks(ticks=abc) #manually setting the x axis with whole numbers
+plt.show()
